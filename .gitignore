@@ -1,0 +1,5 @@
+build/
+.ccls-cache/
+*.dSYM/
+.DS_Store
+
