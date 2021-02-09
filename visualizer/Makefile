@@ -3,7 +3,7 @@ CFLAGS=`pkg-config --libs --cflags raylib`
 run: build
 	./build/RunVisualizer
 
-build:
+build: clean
 	mkdir build
 	cc $(CFLAGS) ./src/main.c -g -o ./build/RunVisualizer
 
