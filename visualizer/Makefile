@@ -1,5 +1,7 @@
 CFLAGS=`pkg-config --libs --cflags raylib`
 
+test: build run
+
 run: build
 	./build/RunVisualizer
 
