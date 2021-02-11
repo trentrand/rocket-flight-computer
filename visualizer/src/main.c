@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "raylib.h"
-#include "rlgl.h"
-#include "raymath.h"
+#include "../lib/raylib.h"
+#include "../lib/rlgl.h"
+#include "../lib/raymath.h"
 
 int main(int argc, char *argv[argc+1]) {
   const int screenWidth = 1920;
@@ -16,6 +16,9 @@ int main(int argc, char *argv[argc+1]) {
   camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
   camera.fovy = 45.0f;
   camera.type = CAMERA_PERSPECTIVE;
+
+  Mesh rocketBodyMesh = GenMeshCylinder(3.0f, 30.f, 10);
+  Model rocketBody = LoadModelFromMesh(rocketBodyMesh);
 
   float pitch = 0.0f;
   float roll = 0.0f;
@@ -55,7 +58,8 @@ int main(int argc, char *argv[argc+1]) {
           rlRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
         rlPopMatrix();
 
-        DrawCylinder((Vector3){ 0.0f, 50.0f, 0.0f }, 5.0f, 5.0f, 50.f, 100, BLACK);
+        rocketBody.transform = MatrixRotateXYZ((Vector3){ DEG2RAD * pitch, DEG2RAD * yaw, DEG2RAD * roll });
+        DrawModel(rocketBody, (Vector3){ 0.0f, 50.0f, 0.0f }, 1.0f, BLACK);
       }
       EndMode3D();
 
