@@ -3,8 +3,18 @@
 #include "../lib/raylib.h"
 #include "../lib/rlgl.h"
 #include "../lib/raymath.h"
+#include "./serial-interface.c"
 
 int main(int argc, char *argv[argc+1]) {
+  setup_serial_stream("/dev/cu.usbserial-0001");
+  char readBuffer[128];
+  int readCount = 0;
+  while(readCount <= 250) {
+    int numberOfBytesRead = read_serial_stream(readBuffer, sizeof(readBuffer));
+    printf("Read %i bytes. Received message: %s\n\n", numberOfBytesRead, readBuffer);
+    readCount += 1;
+  }
+
   const int screenWidth = 1920;
   const int screenHeight = 1080;
 
@@ -69,6 +79,7 @@ int main(int argc, char *argv[argc+1]) {
     EndDrawing();
   }
 
+  close_serial_stream();
   CloseWindow();
 
   return EXIT_SUCCESS;
