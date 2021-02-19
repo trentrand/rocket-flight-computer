@@ -1,11 +1,12 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "BNO055ESP32.h"
+#include "sdkconfig.h"
 
 static const char* TAG = "BNO055";
 
 extern "C" void app_main() {
-  BNO055 bno(UART_NUM_1, GPIO_NUM_17, GPIO_NUM_16);
+  BNO055 bno(UART_NUM_1, (gpio_num_t)CONFIG_BNO055_SCL_GPIO, (gpio_num_t)CONFIG_BNO055_SDA_GPIO);
 
   try {
     bno.begin();

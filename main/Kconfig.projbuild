@@ -1,3 +1,17 @@
 menu "Flight Computer Configuration"
 
+    config BNO055_SDA_GPIO
+        int "GPIO pin number for BNO055 SDA"
+        range 0 34
+        default 16
+        help
+            GPIO pin number for the BNO055's SDA connection.
+
+    config BNO055_SCL_GPIO
+        int "GPIO pin number for BNO055 SCL"
+        range 0 34
+        default 17
+        help
+            GPIO pin number for the BNO055's SCL connection.
+
 endmenu

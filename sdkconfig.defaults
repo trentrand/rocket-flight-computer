@@ -1,0 +1,5 @@
+#
+# Flight Computer Configuration
+#
+CONFIG_BNO055_SDA_GPIO=16
+CONFIG_BNO055_SCL_GPIO=17
