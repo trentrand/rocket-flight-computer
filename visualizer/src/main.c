@@ -3,7 +3,7 @@
 #include "../lib/raylib.h"
 #include "../lib/rlgl.h"
 #include "../lib/raymath.h"
-#include "./serial-interface.c"
+#include "./drivers/serial-interface.c"
 
 int main(int argc, char *argv[argc+1]) {
   setup_serial_stream("/dev/cu.usbserial-0001");
