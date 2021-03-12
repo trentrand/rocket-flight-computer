@@ -1,12 +1,17 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "BNO055ESP32.h"
 #include "sdkconfig.h"
+#include "../components/BNO055/src/BNO055ESP32.h"
+#include "./models/peripherals.pb.h"
+#include "./models/logs.pb.h"
+#include <google/protobuf/text_format.h>
+
+using namespace std;
 
 static const char* TAG = "BNO055";
 
 extern "C" void app_main() {
-  BNO055 bno(UART_NUM_1, (gpio_num_t)CONFIG_BNO055_SCL_GPIO, (gpio_num_t)CONFIG_BNO055_SDA_GPIO);
+ BNO055 bno(UART_NUM_1, (gpio_num_t)CONFIG_BNO055_SCL_GPIO, (gpio_num_t)CONFIG_BNO055_SDA_GPIO);
 
   try {
     bno.begin();
@@ -16,7 +21,7 @@ extern "C" void app_main() {
   } catch (BNO055BaseException& ex) {
     ESP_LOGE(TAG, "Setup Failed, Error: %s", ex.what());
     return;
-  } catch (std::exception& ex) {
+  } catch (exception& ex) {
     ESP_LOGE(TAG, "Setup Failed, Error: %s", ex.what());
     return;
   }
@@ -35,23 +40,38 @@ extern "C" void app_main() {
   } catch (BNO055BaseException& ex) {
     ESP_LOGE(TAG, "Something bad happened: %s", ex.what());
     return;
-  } catch (std::exception& ex) {
+  } catch (exception& ex) {
     ESP_LOGE(TAG, "Something bad happened: %s", ex.what());
     return;
   }
 
   while (1) {
+    models::Logs logs;
+
     try {
       bno055_calibration_t cal = bno.getCalibration();
       bno055_vector_t v = bno.getVectorEuler();
-      ESP_LOGI(TAG, "Euler: X: %.1f Y: %.1f Z: %.1f || Calibration SYS: %u GYRO: %u ACC:%u MAG:%u", v.x, v.y, v.z, cal.sys,
-          cal.gyro, cal.accel, cal.mag);
+
+      models::Logs_LogEntry* log = logs.add_log();
+      models::BNO055* bno055 = log->mutable_bno055();
+      models::DirectionalVector* direction = bno055->mutable_direction();
+
+      direction->set_x(v.x);
+      direction->set_y(v.y);
+      direction->set_z(v.z);
+
+      cout << "Serialization:\n\n" << bno055->DebugString() << "\n\n";
+
+      ESP_LOGI(TAG, "Euler: X: %.1f Y: %.1f Z: %.1f || Calibration SYS: %u GYRO: %u ACC:%u MAG:%u",
+        v.x, v.y, v.z, cal.sys, cal.gyro, cal.accel, cal.mag);
     } catch (BNO055BaseException& ex) {
       ESP_LOGE(TAG, "Something bad happened: %s", ex.what());
       return;
-    } catch (std::exception& ex) {
+    } catch (exception& ex) {
       ESP_LOGE(TAG, "Something bad happened: %s", ex.what());
     }
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
+
+  google::protobuf::ShutdownProtobufLibrary();
 }

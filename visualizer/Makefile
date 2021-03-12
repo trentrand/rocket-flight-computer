@@ -1,8 +1,9 @@
-CFLAGS=`pkg-config --libs --cflags raylib`
+CFLAGS=`pkg-config --libs --cflags 'raylib' 'libprotobuf-c >= 1.0.0'`
+LDFLAGS=`pkg-config --libs 'libprotobuf-c >= 1.0.0'`
 
 test: build run
 
-postinstall: protobufc_install
+install: protobufc_install
 
 run: build
 	./build/RunVisualizer
@@ -15,9 +16,10 @@ clean:
 	rm -rf ./build
 
 protobuf:
-	protoc --proto_path=../models --c_out=lib peripherals.proto
+	protoc --proto_path=../models --c_out=src/models logs.proto peripherals.proto
 
 protobufc_install:
-	cd lib/protobuf-c/ \
+	pushd lib/protobuf-c/ \
 	./autogen.sh && ./configure && \
 	make && make install
+	popd

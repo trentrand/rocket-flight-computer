@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package models;
+
+import "google/protobuf/timestamp.proto";
+import "peripherals.proto";
+
+message Logs {
+  message LogEntry {
+    google.protobuf.Timestamp timestamp = 1;
+    models.BNO055 bno055 = 2;
+  }
+  repeated LogEntry log = 1;
+}

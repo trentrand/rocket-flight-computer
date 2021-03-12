@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package models;
+
+message DirectionalVector {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+message BNO055 {
+  DirectionalVector direction = 1;
+}

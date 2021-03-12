@@ -1,6 +1,12 @@
+# Protocol Buffers (pb3)
+*.pb-c.c
+*.pb-c.h
+
+# ESP-IDF build
 sdkconfig
 build/
 .ccls-cache/
 *.dSYM/
-.DS_Store
 
+# General
+.DS_Store
