@@ -39,7 +39,7 @@
 #include <sys/types.h>
 #endif
 
-#if !_WIN32
+#if !_WIN32 && !__XTENSA__
 #include <sys/uio.h>
 #endif
 

@@ -46,7 +46,7 @@
 #include <new>
 #include <signal.h>
 #include <stdint.h>
-#ifndef _WIN32
+#if !_WIN32
 #include <sys/mman.h>
 #endif
 #include "io.h"

@@ -105,7 +105,7 @@ private:
   static constexpr uint EXCLUSIVE_REQUESTED = 1u << 30;
   static constexpr uint SHARED_COUNT_MASK = EXCLUSIVE_REQUESTED - 1;
 
-#elif _WIN32 || __CYGWIN__
+#elif _WIN32 || __CYGWIN__ || __XTENSA__
   uintptr_t srwLock;  // Actually an SRWLOCK, but don't want to #include <windows.h> in header.
 
 #else
@@ -120,7 +120,7 @@ private:
 #if KJ_USE_FUTEX
     uint futex;
     bool hasTimeout;
-#elif _WIN32 || __CYGWIN__
+#elif _WIN32 || __CYGWIN__ || __XTENSA__
     uintptr_t condvar;
     // Actually CONDITION_VARIABLE, but don't want to #include <windows.h> in header.
 #else
