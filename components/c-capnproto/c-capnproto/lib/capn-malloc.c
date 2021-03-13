@@ -17,7 +17,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+
+#ifdef __XTENSA__
 #include <errno.h>
+#endif
 
 /*
  * 8 byte alignment is required for struct capn_segment.
