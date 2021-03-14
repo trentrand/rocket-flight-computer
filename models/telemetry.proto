@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message Telemetry {
+  int64 timestampStart = 1;
+}

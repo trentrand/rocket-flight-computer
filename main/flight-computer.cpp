@@ -2,11 +2,41 @@
 #include "freertos/task.h"
 #include "BNO055ESP32.h"
 #include "sdkconfig.h"
+#include "./models/telemetry.pb-c.h"
+#include <string.h>
+#include <stdio.h>
 
 static const char* TAG = "BNO055";
 
 extern "C" void app_main() {
   BNO055 bno(UART_NUM_1, (gpio_num_t)CONFIG_BNO055_SCL_GPIO, (gpio_num_t)CONFIG_BNO055_SDA_GPIO);
+
+  // Initialize Telemetry proto buffer
+  Telemetry telemetry = TELEMETRY__INIT;
+
+  // Store timestamp
+  struct timeval tv_now;
+  gettimeofday(&tv_now, NULL);
+  int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+
+  telemetry.timestampstart = time_us;
+
+  // Serialize
+  unsigned char simple_pad[8];
+  unsigned char *buffer;
+  size_t bufferLength;
+  ProtobufCBufferSimple bs = PROTOBUF_C_BUFFER_SIMPLE_INIT(simple_pad);
+
+  bufferLength = telemetry__get_packed_size(&telemetry);
+  buffer = (unsigned char*) malloc(bufferLength);
+
+  telemetry__pack(&telemetry, buffer);
+  telemetry__pack_to_buffer(&telemetry, &bs.base);
+
+  fprintf(stderr, "Writing %hu serialized bytes\n", bufferLength);
+
+  PROTOBUF_C_BUFFER_SIMPLE_CLEAR(&bs);
+  free(buffer);
 
   try {
     bno.begin();
