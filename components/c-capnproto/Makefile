@@ -1,10 +1,12 @@
-build: c-capnproto
+build: libcapnp_c.a
 
 include $(IDF_PATH)/make/project.mk
 
 %.capnp: ;
 
-c-capnproto:
+# Maybe this isn't necessary? Do we need to cross-compile capnpc-c plugin?
+# README talks about just needing 2 or 3 headers alongside the compiled protos.
+libcapnp_c.a:
 	pushd ./c-capnproto/ && \
 	autoreconf -f -i -s && \
 	./configure \
@@ -16,11 +18,11 @@ c-capnproto:
 		LD=xtensa-esp32-elf-ld \
 		LDXX=xtensa-esp32-elf-g++ \
 		CC=xtensa-esp32-elf-gcc \
-		CFLAGS="-lgcc -lc" \
-		CCFLAGS="-std=c++14 -lgcc -c" \
+		CFLAGS="-mlongcalls -lgcc -lc" \
+		CCFLAGS="-mlongcalls -pthread -std=c++14 -lgcc -c" \
 		CPP=xtensa-esp32-elf-cpp \
 		CXX=xtensa-esp32-elf-g++ \
-		CXXFLAGS="-DIOV_MAX=16 -std=c++14 -c" && \
+		CXXFLAGS="-mlongcalls -DIOV_MAX=16 -std=c++14 -c" && \
 	make -w && \
 	popd
 

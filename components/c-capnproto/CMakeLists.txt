@@ -9,7 +9,7 @@ idf_component_register(
 ExternalProject_Add(c-capnproto_build
     PREFIX ${COMPONENT_DIR}
     SOURCE_DIR ${COMPONENT_DIR}/c-capnproto
-    BUILD_BYPRODUCTS ${COMPONENT_DIR}/build
+    BUILD_BYPRODUCTS ${COMPONENT_DIR}/c-capnproto/.libs
     CONFIGURE_COMMAND ""
     BINARY_DIR ${COMPONENT_DIR}
     BUILD_COMMAND make build

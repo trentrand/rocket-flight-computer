@@ -2,6 +2,11 @@
 #include "freertos/task.h"
 #include "BNO055ESP32.h"
 #include "sdkconfig.h"
+#include <string.h>
+
+#include <cstdint>
+#include "capnp_c.h"
+#include "./models/telemetry.capnp.h"
 
 static const char* TAG = "BNO055";
 
@@ -40,7 +45,28 @@ extern "C" void app_main() {
     return;
   }
 
+  uint8_t buf[4096];
+
   while (1) {
+    struct timeval tv_now;
+    gettimeofday(&tv_now, NULL);
+    int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+
+    struct capn c;
+    capn_init_malloc(&c);
+    capn_ptr cr = capn_root(&c);
+    struct capn_segment *cs = cr.seg;
+
+    struct Telemetry logs = {
+      .timestampStart = time_us,
+    };
+    // Set initial object in `p`.
+    Telemetry_ptr telemetryPointer = new_Telemetry(cs);
+    write_Telemetry(&logs, telemetryPointer);
+    capn_setp(capn_root(&c), 0, telemetryPointer.p);
+    capn_write_mem(&c, buf, sizeof(buf), 0 /* packed */);
+    capn_free(&c);
+
     try {
       bno055_calibration_t cal = bno.getCalibration();
       bno055_vector_t v = bno.getVectorEuler();
