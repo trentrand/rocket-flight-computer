@@ -65,7 +65,7 @@ void setup_serial_stream(char* serialPortIdentifier) {
   set_serial_blocking(serialPortDescriptor, 1);
 }
 
-int read_serial_stream(char* buffer, int bufferLength) {
+int read_serial_stream(uint8_t* buffer, int bufferLength) {
   usleep(bufferLength * 100);
   memset(buffer, '\0', bufferLength);
   int numberOfBytesRead = read(serialPortDescriptor, buffer, bufferLength);
