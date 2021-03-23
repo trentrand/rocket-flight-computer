@@ -1,5 +1,23 @@
 menu "Flight Computer Configuration"
 
+    config ESP_WIFI_SSID
+        string "WiFi SSID"
+        default "undefined"
+        help
+            SSID (network name)
+
+    config ESP_WIFI_PASSWORD
+        string "WiFi password"
+        default "undefined"
+        help
+            WiFi password (WPA or WPA2)
+
+    config ESP_WIFI_MAXIMUM_CONNECTION_RETRY
+        int "WiFi maximum connection retry attempts"
+        default 5
+        help
+            Set the maximum retry attempts for client connection to network AP
+
     config BNO055_SDA_GPIO
         int "GPIO pin number for BNO055 SDA"
         range 0 34
