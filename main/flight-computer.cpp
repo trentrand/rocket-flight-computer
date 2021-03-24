@@ -1,6 +1,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "BNO055ESP32.h"
+#include "esp_sntp.h"
 #include "sdkconfig.h"
 #include "./models/telemetry.pb-c.h"
 #include <string.h>
@@ -22,8 +22,6 @@
 #include "BNO055ESP32.h"
 
 static const char* TAG = "Flight Computer";
-
-extern "C" {
 
 // Event group defines bits with event statuses
 static EventGroupHandle_t s_wifi_event_group;
@@ -92,33 +90,64 @@ void wifi_connect(void) {
   ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
   ESP_ERROR_CHECK(esp_wifi_start() );
 
-  /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
-   * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
+  // Waiting until either the connection is established (WIFI_CONNECTED_BIT)
+  // or connection failed for the maximum number of re-tries (WIFI_FAIL_BIT)
   EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
       WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
       pdFALSE,
       pdFALSE,
       portMAX_DELAY);
 
-  /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
-   * happened. */
   if (bits & WIFI_CONNECTED_BIT) {
-    ESP_LOGI(TAG, "Successfully connected to Wifi AP with SSID:%s",
+    ESP_LOGI(TAG, "Successfully connected to Wifi AP with SSID: %s",
         CONFIG_ESP_WIFI_SSID);
   } else if (bits & WIFI_FAIL_BIT) {
-    ESP_LOGI(TAG, "Failed to connect to SSID:%s",
+    ESP_LOGI(TAG, "Failed to connect to SSID: %s",
         CONFIG_ESP_WIFI_SSID);
   } else {
     ESP_LOGE(TAG, "UNEXPECTED EVENT");
   }
 
-  // The event will not be processed after unregister 
+  // The event will not be processed after unregister
   ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));
   ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
   vEventGroupDelete(s_wifi_event_group);
 }
 
-void app_main() {
+void sntp_sync_time(struct timeval *tv) {
+  settimeofday(tv, NULL);
+  ESP_LOGI(TAG, "Time is synchronized from custom code");
+  sntp_set_sync_status(SNTP_SYNC_STATUS_COMPLETED);
+}
+
+void time_sync_notification_cb(struct timeval *tv) {
+  ESP_LOGI(TAG, "Notification of a time synchronization event");
+}
+
+static void initialize_sntp(void) {
+  ESP_LOGI(TAG, "Initializing SNTP");
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_setservername(0, "pool.ntp.org");
+  sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+  sntp_init();
+}
+
+static void obtain_time(void) {
+  initialize_sntp();
+  time_t now = 0;
+  struct tm timeinfo = { 0 };
+
+  int retry = 0;
+  const int retry_count = 10;
+  while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
+    ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+  }
+  time(&now);
+  localtime_r(&now, &timeinfo);
+}
+
+extern "C" void app_main() {
   // Initialize non-volatile flash storage
   esp_err_t ret = nvs_flash_init();
   if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -136,12 +165,27 @@ void app_main() {
   // Initialize Telemetry proto buffer
   Telemetry telemetry = TELEMETRY__INIT;
 
-  // Store timestamp
-  struct timeval tv_now;
-  gettimeofday(&tv_now, NULL);
-  int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+  time_t now;
+  struct tm timeinfo;
+  time(&now);
+  localtime_r(&now, &timeinfo);
+  if (timeinfo.tm_year <= 1970) {
+    ESP_LOGI(TAG, "System clock is not set. Connecting to Wifi and getting time over NTP.");
+    obtain_time();
+    time(&now);
+  }
 
-  telemetry.timestampstart = time_us;
+  char strftime_buf[64];
+
+  // Set timezone to Eastern Standard Time and print local time
+  setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
+  tzset();
+  localtime_r(&now, &timeinfo);
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+  ESP_LOGI(TAG, "The current time in New York is: %s", strftime_buf);
+
+  // Store timestamp
+  telemetry.timestampstart = now;
 
   // Serialize
   unsigned char simple_pad[8];
@@ -154,11 +198,6 @@ void app_main() {
 
   telemetry__pack(&telemetry, buffer);
   telemetry__pack_to_buffer(&telemetry, &bs.base);
-
-  fprintf(stderr, "Writing %hu serialized bytes\n", bufferLength);
-
-  PROTOBUF_C_BUFFER_SIMPLE_CLEAR(&bs);
-  free(buffer);
 
   try {
     bno.begin();
@@ -204,6 +243,18 @@ void app_main() {
     } catch (std::exception& ex) {
       ESP_LOGE(TAG, "Something bad happened: %s", ex.what());
     }
+
+    struct timeval tv_now;
+    gettimeofday(&tv_now, NULL);
+    int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+
+    fprintf(stderr, "Writing %hu serialized bytes\n", bufferLength);
+    printf("Timestamp: %llu\n", time_us);
+    fwrite(buffer, bufferLength, 1, stdout);
+
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
+
+  PROTOBUF_C_BUFFER_SIMPLE_CLEAR(&bs);
+  free(buffer);
 }

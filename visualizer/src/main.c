@@ -8,7 +8,7 @@
 
 int main(int argc, char *argv[argc+1]) {
   setup_serial_stream("/dev/cu.usbserial-0001");
-  uint8_t readBuffer[128];
+  uint64_t readBuffer[128];
   int readCount = 0;
   while(readCount <= 250) {
     int numberOfBytesRead = read_serial_stream(readBuffer, sizeof(readBuffer));
