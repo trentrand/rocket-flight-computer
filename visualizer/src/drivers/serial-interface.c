@@ -1,77 +1,67 @@
+#include <libserialport.h>
 #include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <termios.h>
 
-int serialPortDescriptor;
+struct sp_port *port;
 
-void set_serial_interface_attributes(int serialDescriptor, int speed, int parity) {
-  struct termios tty;
-  if (tcgetattr(serialDescriptor, &tty) != 0) {
-    printf("error getting attributes from serial interface");
-    return;
-  }
+unsigned int timeout = 1000;
 
-  cfsetospeed (&tty, speed);
-  cfsetispeed (&tty, speed);
+// Helper function for error handling
+int check(enum sp_return result) {
+  char *error_message;
 
-  tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8; // 8-bit chars
-  // disable IGNBRK for mismatched speed tests, otherwise receive break as \000 chars
-  tty.c_iflag &= ~IGNBRK; // disable break processing
-  tty.c_lflag = 0; // no signaling chars, no echo,
-  // no canonical processing
-  tty.c_oflag = 0; // no remapping, no delays
-  tty.c_cc[VMIN] = 0; // read doesn't block
-  tty.c_cc[VTIME] = 5; // 0.5 seconds read timeout
-
-  tty.c_iflag &= ~(IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
-
-  tty.c_cflag |= (CLOCAL | CREAD); // ignore modem controls,
-  // enable reading
-  tty.c_cflag &= ~(PARENB | PARODD); // shut off parity
-  tty.c_cflag |= parity;
-  tty.c_cflag &= ~CSTOPB;
-  tty.c_cflag &= ~CRTSCTS;
-
-  if (tcsetattr(serialDescriptor, TCSANOW, &tty) != 0) {
-    printf("error setting serial interface attributes with speed %d and parity %d\n", speed, parity);
-    return;
+  switch (result) {
+    case SP_ERR_ARG:
+      printf("Error: Invalid argument.\n");
+      abort();
+    case SP_ERR_FAIL:
+      error_message = sp_last_error_message();
+      printf("Error: Failed: %s\n", error_message);
+      sp_free_error_message(error_message);
+      abort();
+    case SP_ERR_SUPP:
+      printf("Error: Not supported.\n");
+      abort();
+    case SP_ERR_MEM:
+      printf("Error: Couldn't allocate memory.\n");
+      abort();
+    case SP_OK:
+    default:
+      return result;
   }
 }
 
-void set_serial_blocking(int serialDescriptor, int should_block) {
-  struct termios tty;
-  memset(&tty, 0, sizeof tty);
-  if (tcgetattr(serialDescriptor, &tty) != 0) {
-    printf("error getting attributes from serial interface");
-    return;
-  }
+void serial_initialize(char *port_name) {
+  printf("Opening serial port '%s'\n", port_name);
+  check(sp_get_port_by_name(port_name, &port));
+  check(sp_open(port, SP_MODE_READ_WRITE));
 
-  tty.c_cc[VMIN] = should_block ? 1 : 0;
-  tty.c_cc[VTIME] = 5;
-
-  if (tcsetattr(serialDescriptor, TCSANOW, &tty) != 0) {
-    printf("error setting serial interface blocking attribute to %s\n", should_block == 1 ? "enabled" : "disabled");
-  }
+  // TODO: we can construct this dynamically with sp_get_config()
+  printf("Configuring port to 115200 8N1, no flow control.\n");
+  check(sp_set_baudrate(port, 115200));
+  check(sp_set_bits(port, 8));
+  check(sp_set_parity(port, SP_PARITY_NONE));
+  check(sp_set_stopbits(port, 1));
+  check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
 }
 
-void setup_serial_stream(char* serialPortIdentifier) {
-  serialPortDescriptor = open(serialPortIdentifier, O_RDWR | O_NOCTTY | O_SYNC);
-  if (serialPortDescriptor < 0) {
-    printf("Error opening serial port: %d\n", serialPortDescriptor);
-    return;
+int serial_read(char* buffer, int bufferLength) {
+  printf("Receiving %d bytes on port %s\n", bufferLength, sp_get_port_name(port));
+  int numberOfBytesReadBeforeTimeout = check(sp_blocking_read(port, buffer, bufferLength, timeout));
+
+  if (numberOfBytesReadBeforeTimeout == bufferLength) {
+    printf("Received %d bytes successfully\n", bufferLength);
+  } else {
+    printf("Timed out, %d/%d bytes received\n", numberOfBytesReadBeforeTimeout, bufferLength);
   }
-  set_serial_interface_attributes(serialPortDescriptor, B115200, 0);
-  set_serial_blocking(serialPortDescriptor, 1);
+
+  return numberOfBytesReadBeforeTimeout;
 }
 
-int read_serial_stream(uint8_t* buffer, int bufferLength) {
-  usleep(bufferLength * 100);
-  memset(buffer, '\0', bufferLength);
-  int numberOfBytesRead = read(serialPortDescriptor, buffer, bufferLength);
-  return numberOfBytesRead;
-}
-
-void close_serial_stream() {
-  close(serialPortDescriptor);
+int serial_read_nonblocking(char* buffer, int bufferLength) {
+  printf("Receiving %d bytes on port %s\n", bufferLength, sp_get_port_name(port));
+  int bytesWaitingForRead = sp_input_waiting(port);
+  if (bytesWaitingForRead > 0) {
+    printf("%i bytes waiting for read\n", bytesWaitingForRead);
+    return sp_nonblocking_read(port, buffer, bufferLength);
+  }
 }

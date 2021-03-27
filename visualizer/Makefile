@@ -1,8 +1,8 @@
-CFLAGS=`pkg-config --libs --cflags raylib 'libprotobuf-c >= 1.0.0'`
+CFLAGS=`pkg-config --libs --cflags raylib 'libprotobuf-c >= 1.0.0' libserialport`
 
 test: build run
 
-postinstall: protobufc_install
+install: protobufc_install libserialport_install
 
 run: build
 	./build/RunVisualizer
@@ -20,4 +20,9 @@ compile-protos:
 protobufc_install:
 	cd lib/protobuf-c/ && \
 	./autogen.sh && ./configure --prefix=`pwd`/build && \
+	make && make install
+
+libserialport_install:
+	cd lib/libserialport/ && \
+	./autogen.sh && ./configure && \
 	make && make install
