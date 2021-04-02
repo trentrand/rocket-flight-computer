@@ -1,5 +1,5 @@
 idf_component_register(
-  SRCS "flight-computer.cpp" "models/telemetry.pb-c.c"
+  SRCS "flight-computer.c" "time.c" "flash-storage.c" "network.c" "models/telemetry.pb-c.c"
   INCLUDE_DIRS "."
   PRIV_REQUIRES BNO055 protobuf-c nvs_flash
 )
