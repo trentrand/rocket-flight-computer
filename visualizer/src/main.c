@@ -4,28 +4,38 @@
 #include "../lib/rlgl.h"
 #include "../lib/raymath.h"
 #include "../lib/models/telemetry.pb-c.h"
-#include "./drivers/serial-interface.c"
+#include "./buffer.c"
+#include "./serial-interface.c"
 
 int main(int argc, char *argv[argc+1]) {
-  setup_serial_stream("/dev/cu.usbserial-0001");
-  uint64_t readBuffer[128];
-  int readCount = 0;
-  while(readCount <= 250) {
-    int numberOfBytesRead = read_serial_stream(readBuffer, sizeof(readBuffer));
-    printf("Read %i bytes. Received message: %s\n\n", numberOfBytesRead, readBuffer);
+  if (argc < 2 || argc > 3) {
+    printf("Usage: %s <serial port>\n", argv[0]);
+    return -1;
+  }
+  char *port_name = argv[1];
+  serial_initialize(port_name);
 
-    Telemetry *msg = telemetry__unpack(NULL, numberOfBytesRead, readBuffer);
-    if (msg == NULL) {
-      fprintf(stderr, "error unpacking incoming message\n");
-      exit(1);
+  size_t temporaryInputBufferLength = 8;
+  char* temporaryInputBuffer = malloc(temporaryInputBufferLength * sizeof(char));
+
+  size_t serialBufferLength = 128;
+  circular_buffer_t* serialInputBuffer = circular_buffer_initialize(serialBufferLength);
+
+  // TODO don't block visualizer render
+  while(true) {
+    int numberOfBytesReadBeforeTimeout = serial_read(temporaryInputBuffer, temporaryInputBufferLength);
+    int numberOfBytesWritten = circular_buffer_write(serialInputBuffer, temporaryInputBuffer, numberOfBytesReadBeforeTimeout);
+    if (numberOfBytesWritten == 0 && numberOfBytesReadBeforeTimeout != 0) {
+      printf("Buffer full\n");
     }
-
-    printf("Received timestamp: %llu\n", msg->timestampstart);
-    printf("\n");
-
-    telemetry__free_unpacked(msg, NULL);
-
-    readCount += 1;
+    if (rand()>(RAND_MAX/2)) {
+      printf("read contents: ");
+      for (size_t i = 0; i < serialInputBuffer->currentSize; i++) {
+        char character = circular_buffer_read(serialInputBuffer);
+        printf("%c", character);
+      }
+      printf("\n");
+    }
   }
 
   const int screenWidth = 1920;
@@ -92,7 +102,10 @@ int main(int argc, char *argv[argc+1]) {
     EndDrawing();
   }
 
-  close_serial_stream();
+  free(temporaryInputBuffer);
+  circular_buffer_free(serialInputBuffer);
+  serial_close();
+
   CloseWindow();
 
   return EXIT_SUCCESS;

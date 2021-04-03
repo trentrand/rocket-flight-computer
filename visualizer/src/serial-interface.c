@@ -3,7 +3,7 @@
 
 struct sp_port *port;
 
-unsigned int timeout = 1000;
+unsigned int timeout = (8 * sizeof(char)) / 115200;
 
 // Helper function for error handling
 int check(enum sp_return result) {
@@ -45,15 +45,11 @@ void serial_initialize(char *port_name) {
 }
 
 int serial_read(char* buffer, int bufferLength) {
-  printf("Receiving %d bytes on port %s\n", bufferLength, sp_get_port_name(port));
   int numberOfBytesReadBeforeTimeout = check(sp_blocking_read(port, buffer, bufferLength, timeout));
 
-  if (numberOfBytesReadBeforeTimeout == bufferLength) {
-    printf("Received %d bytes successfully\n", bufferLength);
-  } else {
+  if (numberOfBytesReadBeforeTimeout != bufferLength) {
     printf("Timed out, %d/%d bytes received\n", numberOfBytesReadBeforeTimeout, bufferLength);
   }
-
   return numberOfBytesReadBeforeTimeout;
 }
 
@@ -64,4 +60,10 @@ int serial_read_nonblocking(char* buffer, int bufferLength) {
     printf("%i bytes waiting for read\n", bytesWaitingForRead);
     return sp_nonblocking_read(port, buffer, bufferLength);
   }
+  return -1;
+}
+
+void serial_close() {
+  check(sp_close(port));
+  sp_free_port(port);
 }
