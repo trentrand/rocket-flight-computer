@@ -6,6 +6,7 @@
 #include "../lib/models/telemetry.pb-c.h"
 #include "./circular-buffer.c"
 #include "./serial-interface.c"
+#include "./packet.c"
 
 int main(int argc, char *argv[argc+1]) {
   if (argc < 2 || argc > 3) {
@@ -15,11 +16,16 @@ int main(int argc, char *argv[argc+1]) {
   char *port_name = argv[1];
   serial_initialize(port_name);
 
+  // TODO remove this buffer, write directly to circular buffer
   size_t temporaryInputBufferLength = 8;
   char* temporaryInputBuffer = malloc(temporaryInputBufferLength * sizeof(char));
 
   size_t serialBufferLength = 128;
   circular_buffer_t* serialInputBuffer = circular_buffer_initialize(serialBufferLength);
+
+  size_t packetDataLength = 128;
+  char* packetData = malloc(packetDataLength * sizeof(char));
+  packet_t* packet = packet_initialize(packetData, packetDataLength);
 
   // TODO don't block visualizer render
   while(true) {
@@ -28,13 +34,11 @@ int main(int argc, char *argv[argc+1]) {
     if (numberOfBytesWritten == 0 && numberOfBytesReadBeforeTimeout != 0) {
       printf("Buffer full\n");
     }
-    if (rand()>(RAND_MAX/2)) {
-      printf("read contents: ");
-      for (size_t i = 0; i < serialInputBuffer->currentSize; i++) {
-        char character = circular_buffer_read(serialInputBuffer);
-        printf("%c", character);
-      }
-      printf("\n");
+    read_packet_payload_from_buffer(serialInputBuffer, packet);
+    if (packet->state == COMPLETE) {
+      print_packet_payload(packet);
+      packet->state = PARTIAL;
+      packet->payloadLength = 0;
     }
   }
 

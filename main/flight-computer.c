@@ -17,6 +17,24 @@
 
 const char* TAG = "Flight Computer";
 
+const uint8_t boundaryFlag = 0x7E;
+const uint8_t escapeFlag = 0x7D;
+
+size_t pack_payload_to_frame(const uint8_t *data, size_t dataLength, uint8_t *outputBuffer) {
+  size_t writeHeadIndex = 0;
+  outputBuffer[writeHeadIndex++] = boundaryFlag;
+  for (size_t readHeadIndex = 0; readHeadIndex < dataLength; readHeadIndex++) {
+    if (*(data + readHeadIndex) == boundaryFlag || *(data + readHeadIndex) == escapeFlag) {
+      outputBuffer[writeHeadIndex++] = escapeFlag;
+      outputBuffer[writeHeadIndex++] = *(data + readHeadIndex);
+    } else {
+      outputBuffer[writeHeadIndex++] = *(data + readHeadIndex);
+    }
+  }
+  outputBuffer[writeHeadIndex++] = boundaryFlag;
+  return writeHeadIndex;
+}
+
 void app_main() {
   initialize_flash_storage();
   wifi_connect();
@@ -92,6 +110,9 @@ void app_main() {
   /* return; */
   /* } */
 
+  char testString[] = "A~B}C";
+  buffer = (uint8_t *)testString;
+
   while (1) {
     /* try { */
     /*   bno055_calibration_t cal = bno.getCalibration(); */
@@ -106,8 +127,13 @@ void app_main() {
     /* } */
 
     int64_t time_us = timestamp_microseconds();
-    ESP_LOGI(TAG, "Timestamp: %llu\n", time_us);
+    /* ESP_LOGI(TAG, "Timestamp: %llu\n", time_us); */
+
+    const size_t serialOutputBufferLength = pack_payload_to_frame(buffer, strlen(testString), serialOutputBuffer);
+    uart_write_bytes(uart_num, (const char*)serialOutputBuffer, serialOutputBufferLength);
 
     vTaskDelay(500 / portTICK_PERIOD_MS);
   }
+
+  free(buffer);
 }
