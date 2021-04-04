@@ -1,3 +1,6 @@
+#ifndef _SERIALINTERFACEH_
+#define _SERIALINTERFACEH_
+
 #include <libserialport.h>
 #include <string.h>
 
@@ -67,3 +70,5 @@ void serial_close() {
   check(sp_close(port));
   sp_free_port(port);
 }
+
+#endif

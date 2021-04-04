@@ -1,3 +1,6 @@
+#ifndef _CIRCULARBUFFERH_
+#define _CIRCULARBUFFERH_
+
 #include <assert.h>
 #include <stdbool.h>
 
@@ -7,6 +10,7 @@ typedef struct circular_buffer {
   size_t currentSize;
   size_t length;
   char* data;
+
 } circular_buffer_t;
 
 circular_buffer_t* circular_buffer_initialize(size_t length) {
@@ -56,3 +60,5 @@ void circular_buffer_free(circular_buffer_t* buffer) {
   free(buffer->data);
   free(buffer);
 }
+
+#endif

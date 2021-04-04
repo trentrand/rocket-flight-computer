@@ -4,7 +4,7 @@
 #include "../lib/rlgl.h"
 #include "../lib/raymath.h"
 #include "../lib/models/telemetry.pb-c.h"
-#include "./buffer.c"
+#include "./circular-buffer.c"
 #include "./serial-interface.c"
 
 int main(int argc, char *argv[argc+1]) {
