@@ -9,7 +9,7 @@ typedef struct circular_buffer {
   unsigned int head;
   size_t currentSize;
   size_t length;
-  char* data;
+  uint8_t* data;
 
 } circular_buffer_t;
 
@@ -19,7 +19,7 @@ circular_buffer_t* circular_buffer_initialize(size_t length) {
   buffer->head = 0;
   buffer->currentSize = 0;
   buffer->length = length;
-  buffer->data = (char*) calloc(length, sizeof(char));
+  buffer->data = (uint8_t*) calloc(length, sizeof(uint8_t));
   return buffer;
 }
 
@@ -31,7 +31,7 @@ bool circular_buffer_is_empty(circular_buffer_t* buffer) {
   return buffer->currentSize == 0;
 }
 
-int circular_buffer_write(circular_buffer_t* buffer, char* inputData, size_t inputLength) {
+int circular_buffer_write(circular_buffer_t* buffer, uint8_t* inputData, size_t inputLength) {
   assert(buffer != NULL);
   if (circular_buffer_is_full(buffer)) {
     return 0;
@@ -41,15 +41,14 @@ int circular_buffer_write(circular_buffer_t* buffer, char* inputData, size_t inp
     buffer->data[buffer->tail] = *(inputData + inputDataWriteIndex);
   }
   buffer->currentSize += inputLength;
-  printf("buffer size: %zu\n", buffer->currentSize);
   return inputLength;
 }
 
-char circular_buffer_read(circular_buffer_t* buffer) {
+uint8_t circular_buffer_read(circular_buffer_t* buffer) {
   assert(buffer != NULL);
   assert(!circular_buffer_is_empty(buffer));
 
-  char outputData = buffer->data[buffer->head];
+  uint8_t outputData = buffer->data[buffer->head];
   buffer->head = (buffer->head + 1) % buffer->length;
   buffer->currentSize -= 1;
 

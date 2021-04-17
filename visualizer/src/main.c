@@ -18,13 +18,13 @@ int main(int argc, char *argv[argc+1]) {
 
   // TODO remove this buffer, write directly to circular buffer
   size_t temporaryInputBufferLength = 8;
-  char* temporaryInputBuffer = malloc(temporaryInputBufferLength * sizeof(char));
+  uint8_t* temporaryInputBuffer = malloc(temporaryInputBufferLength * sizeof(uint8_t));
 
   size_t serialBufferLength = 128;
   circular_buffer_t* serialInputBuffer = circular_buffer_initialize(serialBufferLength);
 
   size_t packetDataLength = 128;
-  char* packetData = malloc(packetDataLength * sizeof(char));
+  uint8_t* packetData = malloc(packetDataLength * sizeof(uint8_t));
   packet_t* packet = packet_initialize(packetData, packetDataLength);
 
   // TODO don't block visualizer render
@@ -34,11 +34,21 @@ int main(int argc, char *argv[argc+1]) {
     if (numberOfBytesWritten == 0 && numberOfBytesReadBeforeTimeout != 0) {
       printf("Buffer full\n");
     }
+
     read_packet_payload_from_buffer(serialInputBuffer, packet);
+
     if (packet->state == COMPLETE) {
-      print_packet_payload(packet);
+      Telemetry *msg = telemetry__unpack(NULL, packet->payloadLength, packet->payload);
+      if (msg == NULL) {
+        fprintf(stderr, "error unpacking incoming message\n");
+      }
+
+      printf("Received timestamp: %llu\n", msg->timestampstart);
+
       packet->state = PARTIAL;
       packet->payloadLength = 0;
+
+      telemetry__free_unpacked(msg, NULL);
     }
   }
 
