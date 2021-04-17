@@ -1,4 +1,5 @@
 sdkconfig
+sdkconfig.old
 build/
 .ccls-cache/
 *.dSYM/
