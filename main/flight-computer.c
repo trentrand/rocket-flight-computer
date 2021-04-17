@@ -38,6 +38,7 @@ size_t pack_payload_to_frame(const uint8_t *data, size_t dataLength, uint8_t *ou
 void app_main() {
   initialize_flash_storage();
   wifi_connect();
+  synchronize_system_clock();
 
   /* BNO055 bno(UART_NUM_1, (gpio_num_t)CONFIG_BNO055_SCL_GPIO, (gpio_num_t)CONFIG_BNO055_SDA_GPIO); */
 

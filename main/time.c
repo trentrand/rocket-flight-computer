@@ -36,7 +36,7 @@ void obtain_time(void) {
   localtime_r(&now, &timeinfo);
 }
 
-time_t time_now() {
+time_t synchronize_system_clock() {
   time_t now;
   struct tm timeinfo;
   time(&now);
