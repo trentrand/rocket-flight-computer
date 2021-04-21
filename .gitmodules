@@ -1,3 +1,0 @@
-[submodule "components/BNO055"]
-	path = components/BNO055
-	url = https://github.com/ShellAddicted/BNO055ESP32.git
