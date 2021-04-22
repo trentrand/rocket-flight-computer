@@ -5,7 +5,7 @@ test: build run
 install: protobufc_install libserialport_install
 
 run: build
-	./build/RunVisualizer
+	./build/RunVisualizer ${ESPPORT}
 
 build: clean
 	mkdir build
