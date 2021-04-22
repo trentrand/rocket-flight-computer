@@ -27,10 +27,13 @@ struct  _Telemetry
 {
   ProtobufCMessage base;
   int64_t timestampstart;
+  double x;
+  double y;
+  double z;
 };
 #define TELEMETRY__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&telemetry__descriptor) \
-    , 0 }
+    , 0, 0, 0, 0 }
 
 
 /* Telemetry methods */

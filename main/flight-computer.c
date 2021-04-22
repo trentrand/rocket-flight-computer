@@ -1,18 +1,21 @@
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include <driver/gpio.h>
 #include <driver/uart.h>
-
-#include "./models/telemetry.pb-c.h"
 
 #include "./time.c"
 #include "./flash-storage.c"
 #include "./network.c"
+#include "./imu.c"
+#include "bno055.h"
+
+#include "./models/telemetry.pb-c.h"
 
 const char* TAG = "Flight Computer";
 
@@ -39,6 +42,8 @@ void app_main() {
   wifi_connect();
   synchronize_system_clock();
 
+  initialize_bno055();
+
   // Configure UART
   const int uart_num = UART_NUM_0;
   uart_config_t uart_config = {
@@ -60,9 +65,16 @@ void app_main() {
   uint8_t *buffer;
   uint8_t *serialOutputBuffer;
 
+
   while (1) {
+    bno055_quaternion_t quaternion;
+    bno055_get_quaternion(0, &quaternion);
+
     int64_t now = timestamp_microseconds();
     telemetry.timestampstart = now;
+    telemetry.x = quaternion.x;
+    telemetry.y = quaternion.y;
+    telemetry.z = quaternion.z;
 
     int bufferLength = telemetry__get_packed_size(&telemetry);
     buffer = (uint8_t*) heap_caps_calloc(1, bufferLength, MALLOC_CAP_8BIT);

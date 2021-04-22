@@ -44,6 +44,7 @@ int main(int argc, char *argv[argc+1]) {
       }
 
       printf("Received timestamp: %llu\n", msg->timestampstart);
+      printf("x: %lf, y: %lf, z: %lf\n", msg->x, msg->y, msg->z);
 
       packet->state = PARTIAL;
       packet->payloadLength = 0;
