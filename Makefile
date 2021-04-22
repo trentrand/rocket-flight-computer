@@ -6,6 +6,6 @@ compile-protos:
 	echo "Compiled protocol buffers for flight computer" && \
 	protoc --c_out=./main/ \
 		./models/telemetry.proto && \
-	echo "Compiled protocol buffers for visualizer" && \
-	protoc --c_out=./visualizer/src/ \
-		./models/telemetry.proto
+	cd ./visualizer && \
+	make compile-protos && \
+	echo "Compiled protocol buffers for visualizer"
