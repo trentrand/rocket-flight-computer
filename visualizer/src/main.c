@@ -27,31 +27,7 @@ int main(int argc, char *argv[argc+1]) {
   uint8_t* packetData = malloc(packetDataLength * sizeof(uint8_t));
   packet_t* packet = packet_initialize(packetData, packetDataLength);
 
-  // TODO don't block visualizer render
-  while(true) {
-    int numberOfBytesReadBeforeTimeout = serial_read(temporaryInputBuffer, temporaryInputBufferLength);
-    int numberOfBytesWritten = circular_buffer_write(serialInputBuffer, temporaryInputBuffer, numberOfBytesReadBeforeTimeout);
-    if (numberOfBytesWritten == 0 && numberOfBytesReadBeforeTimeout != 0) {
-      printf("Buffer full\n");
-    }
-
-    read_packet_payload_from_buffer(serialInputBuffer, packet);
-
-    if (packet->state == COMPLETE) {
-      Telemetry *msg = telemetry__unpack(NULL, packet->payloadLength, packet->payload);
-      if (msg == NULL) {
-        fprintf(stderr, "error unpacking incoming message\n");
-      }
-
-      printf("Received timestamp: %llu\n", msg->timestampstart);
-      printf("x: %lf, y: %lf, z: %lf\n", msg->x, msg->y, msg->z);
-
-      packet->state = PARTIAL;
-      packet->payloadLength = 0;
-
-      telemetry__free_unpacked(msg, NULL);
-    }
-  }
+  Telemetry *msg;
 
   const int screenWidth = 1920;
   const int screenHeight = 1080;
@@ -77,6 +53,14 @@ int main(int argc, char *argv[argc+1]) {
   SetTargetFPS(60);
 
   while (!WindowShouldClose()) {
+    int numberOfBytesReadBeforeTimeout = serial_read(temporaryInputBuffer, temporaryInputBufferLength);
+    int numberOfBytesWritten = circular_buffer_write(serialInputBuffer, temporaryInputBuffer, numberOfBytesReadBeforeTimeout);
+    if (numberOfBytesWritten == 0 && numberOfBytesReadBeforeTimeout != 0) {
+      printf("Buffer full\n");
+    }
+
+    read_packet_payload_from_buffer(serialInputBuffer, packet);
+
     UpdateCamera(&camera);
 
     BeginDrawing();
@@ -106,7 +90,16 @@ int main(int argc, char *argv[argc+1]) {
           rlRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
         rlPopMatrix();
 
-        rocketBody.transform = MatrixRotateXYZ((Vector3){ DEG2RAD * pitch, DEG2RAD * yaw, DEG2RAD * roll });
+        if (packet->state == COMPLETE) {
+          msg = telemetry__unpack(NULL, packet->payloadLength, packet->payload);
+          if (msg == NULL) {
+            fprintf(stderr, "error unpacking incoming message\n");
+          } else {
+            rocketBody.transform = QuaternionToMatrix((Quaternion){ msg->x, msg->y, msg->z, msg->w });
+          }
+          packet->state = PARTIAL;
+          packet->payloadLength = 0;
+        }
         DrawModel(rocketBody, (Vector3){ 0.0f, 50.0f, 0.0f }, 1.0f, BLACK);
       }
       EndMode3D();
@@ -117,6 +110,7 @@ int main(int argc, char *argv[argc+1]) {
     EndDrawing();
   }
 
+  telemetry__free_unpacked(msg, NULL);
   free(temporaryInputBuffer);
   circular_buffer_free(serialInputBuffer);
   serial_close();
