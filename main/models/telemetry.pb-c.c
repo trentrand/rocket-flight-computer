@@ -52,7 +52,7 @@ void   telemetry__free_unpacked
   assert(message->base.descriptor == &telemetry__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor telemetry__field_descriptors[4] =
+static const ProtobufCFieldDescriptor telemetry__field_descriptors[5] =
 {
   {
     "timestampStart",
@@ -102,9 +102,22 @@ static const ProtobufCFieldDescriptor telemetry__field_descriptors[4] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "w",
+    5,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_DOUBLE,
+    0,   /* quantifier_offset */
+    offsetof(Telemetry, w),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned telemetry__field_indices_by_name[] = {
   0,   /* field[0] = timestampStart */
+  4,   /* field[4] = w */
   1,   /* field[1] = x */
   2,   /* field[2] = y */
   3,   /* field[3] = z */
@@ -112,7 +125,7 @@ static const unsigned telemetry__field_indices_by_name[] = {
 static const ProtobufCIntRange telemetry__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 4 }
+  { 0, 5 }
 };
 const ProtobufCMessageDescriptor telemetry__descriptor =
 {
@@ -122,7 +135,7 @@ const ProtobufCMessageDescriptor telemetry__descriptor =
   "Telemetry",
   "",
   sizeof(Telemetry),
-  4,
+  5,
   telemetry__field_descriptors,
   telemetry__field_indices_by_name,
   1,  telemetry__number_ranges,

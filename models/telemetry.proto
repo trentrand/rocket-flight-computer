@@ -5,4 +5,5 @@ message Telemetry {
   double x = 2;
   double y = 3;
   double z = 4;
+  double w = 5;
 }

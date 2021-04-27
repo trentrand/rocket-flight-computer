@@ -30,10 +30,11 @@ struct  _Telemetry
   double x;
   double y;
   double z;
+  double w;
 };
 #define TELEMETRY__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&telemetry__descriptor) \
-    , 0, 0, 0, 0 }
+    , 0, 0, 0, 0, 0 }
 
 
 /* Telemetry methods */

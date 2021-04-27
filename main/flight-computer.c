@@ -75,6 +75,7 @@ void app_main() {
     telemetry.x = quaternion.x;
     telemetry.y = quaternion.y;
     telemetry.z = quaternion.z;
+    telemetry.w = quaternion.w;
 
     int bufferLength = telemetry__get_packed_size(&telemetry);
     buffer = (uint8_t*) heap_caps_calloc(1, bufferLength, MALLOC_CAP_8BIT);
