@@ -110,6 +110,7 @@ int main(int argc, char *argv[argc+1]) {
     EndDrawing();
   }
 
+  free(packet);
   telemetry__free_unpacked(msg, NULL);
   free(temporaryInputBuffer);
   circular_buffer_free(serialInputBuffer);

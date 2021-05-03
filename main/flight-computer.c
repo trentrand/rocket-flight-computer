@@ -63,8 +63,8 @@ void app_main() {
 
   // Transmit telemetry data
   uint8_t *buffer;
+  unsigned int bufferLength;
   uint8_t *serialOutputBuffer;
-
 
   while (1) {
     bno055_quaternion_t quaternion;
@@ -77,17 +77,20 @@ void app_main() {
     telemetry.z = quaternion.z;
     telemetry.w = quaternion.w;
 
-    int bufferLength = telemetry__get_packed_size(&telemetry);
+    bufferLength = telemetry__get_packed_size(&telemetry);
     buffer = (uint8_t*) heap_caps_calloc(1, bufferLength, MALLOC_CAP_8BIT);
-    serialOutputBuffer = (uint8_t*) heap_caps_calloc(1, bufferLength, MALLOC_CAP_8BIT);
 
     telemetry__pack(&telemetry, buffer);
 
+    const unsigned int arbitraryExtraSizeForFraming = 128;
+    serialOutputBuffer = (uint8_t*) heap_caps_calloc(1, bufferLength + arbitraryExtraSizeForFraming, MALLOC_CAP_8BIT);
     const size_t serialOutputBufferLength = pack_payload_to_frame(buffer, bufferLength, serialOutputBuffer);
+
     uart_write_bytes(uart_num, (const char*)serialOutputBuffer, serialOutputBufferLength);
+
+    free(buffer);
+    free(serialOutputBuffer);
 
     vTaskDelay(500 / portTICK_PERIOD_MS);
   }
-
-  free(buffer);
 }
